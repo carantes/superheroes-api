@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/carantes/superheroes-api/bundles/superheroesbundle"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSuperheroesControllerSpec(t *testing.T) {
@@ -24,10 +25,11 @@ func TestSuperheroesControllerSpec(t *testing.T) {
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
-		expected := `{"Message": "Superheroes are awesome!"}`
 
-		if string(body) != expected {
-			t.Errorf("TestSuperheroesControllerSpec result is incorrect, return %s, expected %s", string(body), expected)
-		}
+		assert.Nil(t, err, "should not return error")
+
+		// TODO: validate body data against model
+		assert.NotNil(t, body)
+		assert.Equal(t, resp.StatusCode, http.StatusOK)
 	})
 }

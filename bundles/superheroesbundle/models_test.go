@@ -4,43 +4,29 @@ import (
 	"testing"
 
 	"github.com/carantes/superheroes-api/bundles/superheroesbundle"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewSuperheroSpec(t *testing.T) {
 	sh := superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-")
 
 	t.Run("superhero should have Name", func(t *testing.T) {
-		expected := "Batman"
-		if sh.Name != expected {
-			t.Errorf("TestNewSuperheroSpec result is incorrect, return %s, expected %s", sh.Name, expected)
-		}
+		assert.Equal(t, sh.Name, "Batman")
 	})
 
 	t.Run("superhero should have FullName", func(t *testing.T) {
-		expected := "Bruce Wayne"
-		if sh.FullName != expected {
-			t.Errorf("TestNewSuperheroSpec result is incorrect, return %s, expected %s", sh.FullName, expected)
-		}
+		assert.Equal(t, sh.FullName, "Bruce Wayne")
 	})
 
 	t.Run("superhero should have Intelligence", func(t *testing.T) {
-		expected := 100
-		if sh.Intelligence != expected {
-			t.Errorf("TestNewSuperheroSpec result is incorrect, return %d, expected %d", sh.Intelligence, expected)
-		}
+		assert.Equal(t, sh.Intelligence, 100)
 	})
 
 	t.Run("superhero should have Power", func(t *testing.T) {
-		expected := 47
-		if sh.Power != expected {
-			t.Errorf("TestNewSuperheroSpec result is incorrect, return %d, expected %d", sh.Power, expected)
-		}
+		assert.Equal(t, sh.Power, 47)
 	})
 
 	t.Run("superhero should have Ocuppation", func(t *testing.T) {
-		expected := "-"
-		if sh.Occupation != expected {
-			t.Errorf("TestNewSuperheroSpec result is incorrect, return %s, expected %s", sh.Occupation, expected)
-		}
+		assert.Equal(t, sh.Occupation, "-")
 	})
 }
