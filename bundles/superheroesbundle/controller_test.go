@@ -24,7 +24,7 @@ func TestSuperheroesControllerSpec(t *testing.T) {
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
-		expected := `{"message": "Superheroes are awesome!"}`
+		expected := `{"Message": "Superheroes are awesome!"}`
 
 		if string(body) != expected {
 			t.Errorf("TestSuperheroesControllerSpec result is incorrect, return %s, expected %s", string(body), expected)

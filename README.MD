@@ -12,6 +12,9 @@ The goal here is to keep the project struture very simple, thinking in medium si
 ├── bundles
     ├── superheroesbundle     # Superheroes bundle
 ├── core                      # Core/base structs and interfaces
+    ├── config.go             # Configuration from environment variables
+    ├── controller.go         # Controller base struct
+    ├── server.go             # Server
 └── main.go                   # Root main file
 ```
 

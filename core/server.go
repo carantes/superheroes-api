@@ -29,7 +29,7 @@ type Bundle interface {
 	GetRoutes() []Route
 }
 
-// NewServer return a instance of Server
+// NewServer load bundles, routes and return a instance of Server
 func NewServer(bundles []Bundle, opts ServerOpts) *Server {
 	r := mux.NewRouter()
 	var s *mux.Router
