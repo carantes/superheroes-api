@@ -8,15 +8,25 @@ The goal here is to keep the project struture very simple, thinking in medium si
 
 ```
 .
-├── build         # Compiled files
-├── core          # Core/base structs and interfaces
-├── superhero     # Superhero bundle
-└── main.go       # Root main file
+├── build                     # Compiled files
+├── bundles
+    ├── superheroesbundle     # Superheroes bundle
+├── core                      # Core/base structs and interfaces
+└── main.go                   # Root main file
 ```
 
 ## Requirements (WIP)
 
 - GO
+
+## Environments
+
+Dotenv load environment variables from `.env` file.
+
+```
+API_PORT=8080
+API_PREFIX=/api/v1/
+```
 
 ## Commands (WIP)
 
@@ -27,3 +37,9 @@ The goal here is to keep the project struture very simple, thinking in medium si
 - Run Tests
 
     `go test`
+
+
+## Packages
+
+- [Gorilla MUX](github.com/gorilla/mux): HTTP Router and for building webservers
+- [GO DotEnv](github.com/joho/godotenv): Load environment variables from .env
