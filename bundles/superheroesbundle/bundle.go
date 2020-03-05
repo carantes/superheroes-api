@@ -13,7 +13,12 @@ type SuperheroesBundle struct {
 
 // NewSuperheroesBundle instance
 func NewSuperheroesBundle() core.Bundle {
-	ctr := NewSuperheroesController()
+	data := []Superhero{
+		*NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-"),
+		*NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender..."),
+	}
+	repo := NewSuperheroesRepository(data)
+	ctr := NewSuperheroesController(repo)
 
 	// Bundle routes
 	r := []core.Route{
@@ -21,6 +26,21 @@ func NewSuperheroesBundle() core.Bundle {
 			Method:  http.MethodGet,
 			Path:    "/superheroes",
 			Handler: ctr.Index,
+		},
+		core.Route{
+			Method:  http.MethodGet,
+			Path:    "/superheroes/{uuid}",
+			Handler: ctr.Get,
+		},
+		core.Route{
+			Method:  http.MethodPost,
+			Path:    "/superheroes",
+			Handler: ctr.Create,
+		},
+		core.Route{
+			Method:  http.MethodDelete,
+			Path:    "/superheroes/{uuid}",
+			Handler: ctr.Delete,
 		},
 	}
 

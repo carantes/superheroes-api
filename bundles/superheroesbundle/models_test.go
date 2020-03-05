@@ -11,22 +11,22 @@ func TestNewSuperheroSpec(t *testing.T) {
 	sh := superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-")
 
 	t.Run("superhero should have Name", func(t *testing.T) {
-		assert.Equal(t, sh.Name, "Batman")
+		assert.Equal(t, "Batman", sh.Name)
 	})
 
 	t.Run("superhero should have FullName", func(t *testing.T) {
-		assert.Equal(t, sh.FullName, "Bruce Wayne")
+		assert.Equal(t, "Bruce Wayne", sh.FullName)
 	})
 
 	t.Run("superhero should have Intelligence", func(t *testing.T) {
-		assert.Equal(t, sh.Intelligence, 100)
+		assert.Equal(t, 100, sh.Intelligence)
 	})
 
 	t.Run("superhero should have Power", func(t *testing.T) {
-		assert.Equal(t, sh.Power, 47)
+		assert.Equal(t, 47, sh.Power)
 	})
 
 	t.Run("superhero should have Ocuppation", func(t *testing.T) {
-		assert.Equal(t, sh.Occupation, "-")
+		assert.Equal(t, "-", sh.Occupation)
 	})
 }
