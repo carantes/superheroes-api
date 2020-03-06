@@ -2,6 +2,7 @@ package superheroesbundle
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/carantes/superheroes-api/core"
 )
@@ -17,8 +18,13 @@ func NewSuperheroesBundle() core.Bundle {
 		*NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-"),
 		*NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender..."),
 	}
+
 	repo := NewSuperheroesRepository(data)
-	ctr := NewSuperheroesController(repo)
+	cfg := core.GetConfig()
+	httpClient := &http.Client{Timeout: time.Second * time.Duration(cfg.SuperheroAPITimeout)}
+	baseURL := cfg.SuperheroAPIBaseURL + cfg.SuperheroAPIToken
+	api := NewSuperheroAPI(httpClient, baseURL)
+	ctr := NewSuperheroesController(repo, api)
 
 	// Bundle routes
 	r := []core.Route{

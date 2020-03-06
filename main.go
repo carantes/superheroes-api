@@ -21,18 +21,18 @@ func main() {
 }
 
 func initBundles() []core.Bundle {
+	log.Println("Loading bundles")
 	return []core.Bundle{
 		superheroesbundle.NewSuperheroesBundle(),
 	}
 }
 
 func loadConfig() *core.Config {
+	log.Println("Loading configs from .env")
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(".env file not found")
 	}
 
-	c := &core.Config{}
-	c.Load()
-	return c
+	return core.GetConfig()
 }

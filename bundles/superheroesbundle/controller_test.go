@@ -14,7 +14,7 @@ import (
 
 func GetTestController(data []superheroesbundle.Superhero) *superheroesbundle.SuperheroesController {
 	r := superheroesbundle.NewSuperheroesRepository(data)
-	c := superheroesbundle.NewSuperheroesController(r)
+	c := superheroesbundle.NewSuperheroesController(r, nil)
 	return c
 }
 

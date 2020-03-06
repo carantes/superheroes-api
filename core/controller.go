@@ -32,6 +32,8 @@ func (c *Controller) HandleError(w http.ResponseWriter, err error) bool {
 		return false
 	}
 
+	log.Println(err)
+
 	switch err := err.(type) {
 	case *HTTPError:
 		c.SendJSON(w, &err, err.Status)
