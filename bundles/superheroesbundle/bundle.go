@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/carantes/superheroes-api/core"
+	"github.com/jinzhu/gorm"
 )
 
 // SuperheroesBundle handle superhero resources
@@ -13,13 +14,8 @@ type SuperheroesBundle struct {
 }
 
 // NewSuperheroesBundle instance
-func NewSuperheroesBundle() core.Bundle {
-	data := []Superhero{
-		*NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-"),
-		*NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender..."),
-	}
-
-	repo := NewSuperheroesRepository(data)
+func NewSuperheroesBundle(db *gorm.DB) core.Bundle {
+	repo := NewSuperheroesRepository(db)
 	cfg := core.GetConfig()
 	httpClient := &http.Client{Timeout: time.Second * time.Duration(cfg.SuperheroAPITimeout)}
 	baseURL := cfg.SuperheroAPIBaseURL + cfg.SuperheroAPIToken

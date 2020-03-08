@@ -48,3 +48,4 @@ API_PREFIX=/api/v1/
 - [GO DotEnv](github.com/joho/godotenv): Load environment variables from .env
 - [UUID](github.com/satori/go.uuid): Generate and Parse Universally Unique Identifier (UUID)
 - [Testify](github.com/stretchr/testify/assert): Easy assertions
+- [SQL Mock](github.com/DATA-DOG/go-sqlmock): Mock database interactions

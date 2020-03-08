@@ -1,28 +1,32 @@
 package superheroesbundle
 
-import uuid "github.com/satori/go.uuid"
+import (
+	"github.com/carantes/superheroes-api/core"
+	uuid "github.com/satori/go.uuid"
+)
 
 // Superhero model
 type Superhero struct {
-	ID           uuid.UUID         `json:"id"`
-	Name         string            `json:"name"`
-	FullName     string            `json:"fullname"`
-	Intelligence int               `json:"intelligence"`
-	Power        int               `json:"power"`
-	Occupation   string            `json:"occupation"`
-	Errors       map[string]string `json:"-"`
+	core.Base
+	Name         string `json:"name" gorm:"column:name;size:128;not null;"`
+	FullName     string `json:"fullname" gorm:"column:full_name;size:256;"`
+	Intelligence int    `json:"intelligence" gorm:"column:intelligence;"`
+	Power        int    `json:"power" gorm:"column:power;"`
+	Occupation   string `json:"occupation" gorm:"column:occupation;size:128;"`
 }
 
 // NewSuperhero create a new Superhero
 func NewSuperhero(name string, fullName string, intelligence int, power int, occupation string) *Superhero {
-	return &Superhero{
-		ID:           uuid.NewV4(),
+	sh := &Superhero{
 		Name:         name,
 		FullName:     fullName,
 		Intelligence: intelligence,
 		Power:        power,
 		Occupation:   occupation,
 	}
+
+	sh.ID = uuid.NewV4()
+	return sh
 }
 
 // Validate Superhero

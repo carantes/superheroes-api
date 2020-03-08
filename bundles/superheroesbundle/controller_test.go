@@ -2,144 +2,156 @@ package superheroesbundle_test
 
 import (
 	"bytes"
-	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/carantes/superheroes-api/bundles/superheroesbundle"
 	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
+	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/suite"
 )
 
-func GetTestController(data []superheroesbundle.Superhero) *superheroesbundle.SuperheroesController {
-	r := superheroesbundle.NewSuperheroesRepository(data)
-	c := superheroesbundle.NewSuperheroesController(r, nil)
-	return c
+type TestSuperheroesControllerSuite struct {
+	suite.Suite
+	router     *mux.Router
+	controller *superheroesbundle.SuperheroesController
+	repo       *SuperheroRepositoryMock
 }
 
-func TestSuperheroesControllerIndexSpec(t *testing.T) {
-	c := GetTestController([]superheroesbundle.Superhero{
+// Repository Mock
+// TODO: migrate this to a helper file
+type SuperheroRepositoryMock struct {
+	mock.Mock
+}
+
+func (mock *SuperheroRepositoryMock) FindAll() ([]superheroesbundle.Superhero, error) {
+	args := mock.Called()
+	return args.Get(0).([]superheroesbundle.Superhero), args.Error(1)
+}
+
+func (mock *SuperheroRepositoryMock) FindOne(id uuid.UUID) (superheroesbundle.Superhero, error) {
+	args := mock.Called(id)
+	return args.Get(0).(superheroesbundle.Superhero), args.Error(1)
+}
+
+func (mock *SuperheroRepositoryMock) Insert(sh *superheroesbundle.Superhero) error {
+	args := mock.Called(sh)
+	return args.Error(0)
+}
+
+func (mock *SuperheroRepositoryMock) Delete(id uuid.UUID) error {
+	args := mock.Called(id)
+	return args.Error(0)
+}
+
+func (s *TestSuperheroesControllerSuite) SetupSuite() {
+	s.repo = new(SuperheroRepositoryMock)
+	s.controller = superheroesbundle.NewSuperheroesController(s.repo, nil)
+	s.router = mux.NewRouter()
+}
+
+func (s *TestSuperheroesControllerSuite) ServeRequest(method string, url string, payload io.Reader) *httptest.ResponseRecorder {
+	rr := httptest.NewRecorder()
+	req, err := http.NewRequest(method, url, payload)
+	s.NoError(err, "should not return error on new request")
+	s.router.ServeHTTP(rr, req)
+	return rr
+}
+
+func (s *TestSuperheroesControllerSuite) TestIndex() {
+	// Mock repository FindAll function to return mocked data
+	mockData := []superheroesbundle.Superhero{
 		*superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-"),
 		*superheroesbundle.NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender..."),
-	})
+	}
+	s.repo.On("FindAll").Return(mockData, nil)
 
-	r := mux.NewRouter()
-	r.HandleFunc("/superheroes", c.Index).Methods("GET")
+	// Setup handler for Index function
+	s.router.HandleFunc("/superheroes", s.controller.Index).Methods("GET")
 
-	t.Run("GET all superheroes", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/superheroes", nil)
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
+	// Call index
+	rr := s.ServeRequest("GET", "/superheroes", nil)
 
-		var sh []superheroesbundle.Superhero
-		err = json.Unmarshal([]byte(rr.Body.String()), &sh)
-		assert.Nil(t, err, "should not return error on decode to a list of superheroes")
-
-		assert.Equal(t, http.StatusOK, rr.Code, "should return status 200 OK")
-		assert.Equal(t, 2, len(sh), "should return two superheroes")
-		assert.Equal(t, "Batman", sh[0].Name, "first superhero should be Batman")
-	})
+	// Assert return expected result
+	s.Equal(200, rr.Code, "should return status 200 success")
+	s.repo.AssertExpectations(s.T())
 }
 
-func TestSuperheroesControllerGetSpec(t *testing.T) {
-	sh := superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-")
-	c := GetTestController([]superheroesbundle.Superhero{*sh})
+func (s *TestSuperheroesControllerSuite) TestGetInvalidUUID() {
+	s.router.HandleFunc("/superheroes/{uuid}", s.controller.Get).Methods("GET")
 
-	r := mux.NewRouter()
-	r.HandleFunc("/superheroes/{uuid}", c.Get).Methods("GET")
+	rr := s.ServeRequest("GET", "/superheroes/1234", nil)
 
-	t.Run("GET superhero with an invalid UUID", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/superheroes/1234", nil)
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
-
-		assert.Equal(t, http.StatusBadRequest, rr.Code, "should return status 400 Bad Request")
-		assert.Equal(t, `{"detail":"Bad request. Invalid UUID."}`, rr.Body.String(), "should return empty body")
-	})
-
-	t.Run("GET superhero with a valid UUUID", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/superheroes/"+sh.ID.String(), nil)
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
-
-		var sh superheroesbundle.Superhero
-		err = json.Unmarshal([]byte(rr.Body.String()), &sh)
-		assert.Nil(t, err, "should not return error on decode to a list of superheroes")
-
-		assert.Equal(t, http.StatusOK, rr.Code, "should return status 200 OK")
-		assert.Equal(t, "Batman", sh.Name, "first superhero should be Batman")
-	})
-
+	s.Equal(http.StatusBadRequest, rr.Code, "should return status 400 Bad Request")
+	s.Equal(`{"detail":"Bad request. Invalid UUID."}`, rr.Body.String(), "should return invalid UUID message")
 }
 
-func TestSuperheroesControllerCreateSpec(t *testing.T) {
-	c := GetTestController([]superheroesbundle.Superhero{})
+func (s *TestSuperheroesControllerSuite) TestGet() {
+	s.router.HandleFunc("/superheroes/{uuid}", s.controller.Get).Methods("GET")
 
-	r := mux.NewRouter()
-	r.HandleFunc("/superheroes", c.Create).Methods("POST")
+	mockData := *superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-")
+	s.repo.On("FindOne", mockData.ID).Return(mockData, nil)
 
-	t.Run("POST empty payload to create superhero return bad request", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("POST", "/superheroes", bytes.NewBufferString(``))
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
+	rr := s.ServeRequest("GET", "/superheroes/"+mockData.ID.String(), nil)
 
-		assert.Equal(t, 400, rr.Code, "should return status 400 bad request")
-		assert.Equal(t, `{"detail":"Bad request. Invalid JSON"}`, rr.Body.String(), "should return invalid json message")
-	})
-
-	t.Run("POST invalid payload to create superhero return bad request", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("POST", "/superheroes", bytes.NewBufferString(`{ "Name": "" }`))
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
-
-		assert.Equal(t, 400, rr.Code, "should return status 400 bad request")
-		assert.Equal(t, `{"detail":"Bad request. Invalid payload"}`, rr.Body.String(), "should return invalid payload message")
-	})
-
-	t.Run("POST valid payload return superhero and status 201 created", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("POST", "/superheroes", bytes.NewBufferString(`{ "Name": "Batman" }`))
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
-
-		var sh superheroesbundle.Superhero
-		err = json.Unmarshal([]byte(rr.Body.String()), &sh)
-		assert.Nil(t, err, "should not return error on decode a superhero")
-		assert.Equal(t, rr.Code, 201, "should return status 201 created")
-		assert.Equal(t, sh.Name, "Batman")
-	})
+	// Assert return expected result
+	s.Equal(200, rr.Code, "should return status 200 success")
+	s.repo.AssertExpectations(s.T())
 }
 
-func TestSuperheroesControllerDeleteSpec(t *testing.T) {
-	sh1 := superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-")
-	sh2 := superheroesbundle.NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender...")
-	c := GetTestController([]superheroesbundle.Superhero{*sh1, *sh2})
+func (s *TestSuperheroesControllerSuite) TestCreateEmptyPayload() {
+	s.router.HandleFunc("/superheroes", s.controller.Create).Methods("POST")
 
-	r := mux.NewRouter()
-	r.HandleFunc("/superheroes/{uuid}", c.Delete).Methods("DELETE")
+	rr := s.ServeRequest("POST", "/superheroes", bytes.NewBufferString(``))
 
-	t.Run("DELETE superhero with an invalid UUID", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("DELETE", "/superheroes/1234", nil)
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
+	s.Equal(400, rr.Code, "should return status 400 bad request")
+	s.Equal(`{"detail":"Bad request. Invalid JSON"}`, rr.Body.String(), "should return invalid json message")
+}
 
-		assert.Equal(t, http.StatusBadRequest, rr.Code, "should return status 400 Bad Request")
-		assert.Equal(t, `{"detail":"Bad request. Invalid UUID."}`, rr.Body.String(), "should return empty body")
-	})
+func (s *TestSuperheroesControllerSuite) TestCreateInvalidPayload() {
+	s.router.HandleFunc("/superheroes", s.controller.Create).Methods("POST")
 
-	t.Run("DELETE superhero with a valid UUID", func(t *testing.T) {
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("DELETE", "/superheroes/"+sh2.ID.String(), nil)
-		assert.Nil(t, err, "should not return error on new request")
-		r.ServeHTTP(rr, req)
+	rr := s.ServeRequest("POST", "/superheroes", bytes.NewBufferString(`{ "Name": "" }`))
 
-		assert.Equal(t, http.StatusNoContent, rr.Code, "should return status 204 No Content")
-	})
+	s.Equal(400, rr.Code, "should return status 400 bad request")
+	s.Equal(`{"detail":"Bad request. Invalid payload"}`, rr.Body.String(), "should return invalid payload message")
+}
+
+func (s *TestSuperheroesControllerSuite) TestCreate() {
+	s.router.HandleFunc("/superheroes", s.controller.Create).Methods("POST")
+
+	s.repo.On("Insert", mock.Anything).Return(nil)
+
+	rr := s.ServeRequest("POST", "/superheroes", bytes.NewBufferString(`{ "Name": "Batman" }`))
+
+	s.Equal(rr.Code, 201, "should return status 201 created")
+	s.repo.AssertExpectations(s.T())
+}
+
+func (s *TestSuperheroesControllerSuite) TestDeleteInvalidUUID() {
+	s.router.HandleFunc("/superheroes/{uuid}", s.controller.Delete).Methods("DELETE")
+
+	rr := s.ServeRequest("DELETE", "/superheroes/1234", nil)
+
+	s.Equal(http.StatusBadRequest, rr.Code, "should return status 400 Bad Request")
+	s.Equal(`{"detail":"Bad request. Invalid UUID."}`, rr.Body.String(), "should return empty body")
+}
+
+func (s *TestSuperheroesControllerSuite) TestDelete() {
+	s.router.HandleFunc("/superheroes/{uuid}", s.controller.Delete).Methods("DELETE")
+
+	shId := uuid.NewV4()
+	s.repo.On("Delete", shId).Return(nil)
+
+	rr := s.ServeRequest("DELETE", "/superheroes/"+shId.String(), nil)
+
+	s.Equal(http.StatusNoContent, rr.Code, "should return status 204 No Content")
+	s.repo.AssertExpectations(s.T())
+}
+
+func TestControllerSuite(t *testing.T) {
+	suite.Run(t, new(TestSuperheroesControllerSuite))
 }
