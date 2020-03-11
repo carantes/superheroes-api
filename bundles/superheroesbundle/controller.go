@@ -18,7 +18,7 @@ type SuperheroesController struct {
 
 // SuperheroesRepositoryInterface define the interface to retrieve, insert and delete data from repository
 type SuperheroesRepositoryInterface interface {
-	FindAll() ([]Superhero, error)
+	FindAll(*Superhero) ([]Superhero, error)
 	FindOne(uuid.UUID) (Superhero, error)
 	Insert(*Superhero) error
 	Delete(id uuid.UUID) error
@@ -39,8 +39,17 @@ func NewSuperheroesController(repo SuperheroesRepositoryInterface, service Super
 
 // Index return all superheroes
 func (c *SuperheroesController) Index(w http.ResponseWriter, r *http.Request) {
-	log.Println("Get all superheroes")
-	sh, err := c.repo.FindAll()
+	var a SuperheroAlignment
+
+	query := r.URL.Query()
+
+	// Filters
+	filter := Superhero{
+		Name:      query.Get("name"),
+		Alignment: a.FromString(query.Get("alignment")),
+	}
+
+	sh, err := c.repo.FindAll(&filter)
 
 	if c.HandleError(w, err) {
 		return
@@ -53,7 +62,6 @@ func (c *SuperheroesController) Index(w http.ResponseWriter, r *http.Request) {
 func (c *SuperheroesController) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uuid, err := uuid.FromString(vars["uuid"])
-	log.Printf("Get superhero id %s", uuid)
 
 	if err != nil {
 		c.HandleError(w, core.NewHTTPError(err, http.StatusBadRequest, "Bad request. Invalid UUID."))
@@ -87,29 +95,29 @@ func (c *SuperheroesController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Check if superhero exist on database
+	// Search superhero on local repository
+	current, err := c.repo.FindAll(&sh)
 
-	// Search for superheroes
-	if c.service != nil {
-		log.Println("Search for superhero on API")
-		res, err := c.service.Search(sh.Name)
-
-		if c.HandleError(w, err) {
-			return
-		}
-
-		if len(res.Results) == 0 {
-			c.HandleError(w, core.NewHTTPError(nil, http.StatusNotFound, "Not found. Can not found a superhero with this name"))
-			return
-		}
-
-		//TODO: Handle existent and duplicates returns
-		//TODO: Refactoring, add other fields
-		sh.FullName = res.Results[0].Biography.FullName
-		sh.Intelligence = core.GetUtils().ParseInt(res.Results[0].Powerstats.Intelligence)
-		sh.Power = core.GetUtils().ParseInt(res.Results[0].Powerstats.Power)
-		sh.Occupation = res.Results[0].Work.Occupation
+	// Return the current database version and response 200 (OK)
+	if err == nil && len(current) > 0 {
+		c.SendJSON(w, &current[0], http.StatusOK)
+		return
 	}
+
+	// Search for it on superheroapi.com
+	res, err := c.service.Search(sh.Name)
+
+	if c.HandleError(w, err) {
+		return
+	}
+
+	if len(res.Results) == 0 {
+		c.HandleError(w, core.NewHTTPError(nil, http.StatusNotFound, "Not found. Can not found a superhero with this name"))
+		return
+	}
+
+	// Get the first match and mapping to superhero object
+	sh = res.ToSuperhero()[0]
 
 	// Insert superhero on repository
 	err = c.repo.Insert(&sh)
@@ -125,7 +133,6 @@ func (c *SuperheroesController) Create(w http.ResponseWriter, r *http.Request) {
 func (c *SuperheroesController) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uuid, err := uuid.FromString(vars["uuid"])
-	log.Printf("Delete superhero id %s", uuid)
 
 	if err != nil {
 		c.HandleError(w, core.NewHTTPError(err, http.StatusBadRequest, "Bad request. Invalid UUID."))

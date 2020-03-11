@@ -54,6 +54,10 @@ func initDB(dbType string, dbConn string) (*gorm.DB, error) {
 		return &gorm.DB{}, err
 	}
 
-	db.AutoMigrate(&superheroesbundle.Superhero{})
+	db.AutoMigrate(
+		&superheroesbundle.Superhero{},
+		&superheroesbundle.SuperheroGroup{},
+	)
+
 	return db, nil
 }

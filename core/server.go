@@ -56,7 +56,8 @@ func NewServer(bundles []Bundle, opts ServerOpts) *Server {
 // Start the server
 func (srv *Server) Start(addr string) error {
 	log.Printf("Listening on addr %s", addr)
-	err := http.ListenAndServe(addr, nil)
+	middleware := NewLogger(srv.Router)
+	err := http.ListenAndServe(addr, middleware)
 
 	if err != nil {
 		return err

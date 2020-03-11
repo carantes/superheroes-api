@@ -2,6 +2,7 @@ package superheroesbundle
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -30,10 +31,21 @@ func NewSuperheroesRepository(db *gorm.DB) *SuperheroesRepository {
 }
 
 // FindAll implement SuperheroesRepositoryInterface
-func (repo *SuperheroesRepository) FindAll() ([]Superhero, error) {
+func (repo *SuperheroesRepository) FindAll(filter *Superhero) ([]Superhero, error) {
 	var shs []Superhero
 
-	repo.db.Find(&shs)
+	// Query builder
+	tx := repo.db.Model(&Superhero{})
+
+	if filter.Name != "" {
+		tx = tx.Where("UPPER(name) LIKE ?", "%"+strings.ToUpper(filter.Name)+"%")
+	}
+
+	if filter.Alignment != UndefinedAlignment {
+		tx = tx.Where("alignment = ?", filter.Alignment)
+	}
+
+	tx.Find(&shs)
 
 	return shs, nil
 }
@@ -42,7 +54,8 @@ func (repo *SuperheroesRepository) FindAll() ([]Superhero, error) {
 func (repo *SuperheroesRepository) FindOne(id uuid.UUID) (Superhero, error) {
 	var sh Superhero
 
-	err := repo.db.First(&sh, "id = ?", id).Error
+	// Find by ID and preload groups list
+	err := repo.db.Preload("Groups").First(&sh, "id = ?", id).Error
 
 	if err != nil {
 		return sh, &SuperheroNotFoundError{ID: id, error: err}

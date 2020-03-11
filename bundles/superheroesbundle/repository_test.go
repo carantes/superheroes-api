@@ -47,57 +47,72 @@ func (s *TestSuperheroesRepositorySuite) SetupSuite() {
 }
 
 func (s *TestSuperheroesRepositorySuite) CreateSuperheroDBRows(heroes []superheroesbundle.Superhero) *sqlmock.Rows {
-	newRows := sqlmock.NewRows([]string{"id", "name", "full_name", "intelligence", "power", "occupation", "created_at", "updated_at", "deleted_at"})
+	newRows := sqlmock.NewRows([]string{"id", "name", "full_name", "alignment", "intelligence", "power", "occupation", "image_url", "relatives", "created_at", "updated_at", "deleted_at"})
 
 	for _, sh := range heroes {
-		newRows.AddRow(sh.ID.String(), sh.Name, sh.FullName, sh.Intelligence, sh.Power, sh.Occupation, sh.CreatedAt, sh.UpdatedAt, sh.DeletedAt)
+		newRows.AddRow(sh.ID.String(), sh.Name, sh.FullName, sh.Alignment, sh.Intelligence, sh.Power, sh.Occupation, sh.ImageURL, sh.TotalRelatives, sh.CreatedAt, sh.UpdatedAt, sh.DeletedAt)
+	}
+
+	return newRows
+}
+
+func (s *TestSuperheroesRepositorySuite) CreateSuperheroGroupDBRows(groups []superheroesbundle.SuperheroGroup) *sqlmock.Rows {
+	newRows := sqlmock.NewRows([]string{"id", "name", "created_at", "updated_at", "deleted_at"})
+
+	for _, sh := range groups {
+		newRows.AddRow(sh.ID.String(), sh.Name, sh.CreatedAt, sh.UpdatedAt, sh.DeletedAt)
 	}
 
 	return newRows
 }
 
 func (s *TestSuperheroesRepositorySuite) TestFindAll() {
-	mockData := []superheroesbundle.Superhero{
-		*superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-"),
-		*superheroesbundle.NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender..."),
-	}
 
-	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "superheros" WHERE "superheros"."deleted_at" IS NULL`)).
-		WillReturnRows(s.CreateSuperheroDBRows(mockData))
+	s.Run("return all", func() {
+		mockData := []superheroesbundle.Superhero{
+			*superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", superheroesbundle.GoodAlignment, 100, 47, "-", "http://www.hero.com/161.jpg", 10),
+			*superheroesbundle.NewSuperhero("Wolverine", "Logan", superheroesbundle.GoodAlignment, 63, 89, "Adventurer, instructor...", "http://www.hero.com/161.jpg", 7),
+		}
 
-	sh, err := s.repo.FindAll()
-	s.NoError(err, "should not return error on find all")
-	s.Len(sh, 2)
-	s.Equal(mockData, sh)
+		s.mock.ExpectQuery(regexp.QuoteMeta(
+			`SELECT * FROM "superheroes" WHERE "superheroes"."deleted_at" IS NULL`)).
+			WillReturnRows(s.CreateSuperheroDBRows(mockData))
+
+		sh, err := s.repo.FindAll(&superheroesbundle.Superhero{})
+		s.NoError(err, "should not return error on find all")
+		s.Len(sh, 2)
+		s.Equal(mockData, sh)
+	})
 }
 
 func (s *TestSuperheroesRepositorySuite) TestFindOne() {
-
-	//TODO: Test 404 if not found the superhero
-	mockData := []superheroesbundle.Superhero{
-		*superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", 100, 47, "-"),
-	}
+	shMock := *superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", superheroesbundle.GoodAlignment, 100, 47, "-", "http://www.hero.com/161.jpg", 10)
+	shGroupMock := *shMock.AddGroup("Justice League")
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "superheros" WHERE "superheros"."deleted_at" IS NULL
-			AND ((id = $1)) ORDER BY "superheros"."id" ASC LIMIT 1`)).
-		WithArgs(mockData[0].ID).
-		WillReturnRows(s.CreateSuperheroDBRows(mockData))
+		`SELECT * FROM "superheroes" WHERE "superheroes"."deleted_at" IS NULL
+			AND ((id = $1)) ORDER BY "superheroes"."id" ASC LIMIT 1`)).
+		WithArgs(shMock.ID).
+		WillReturnRows(s.CreateSuperheroDBRows([]superheroesbundle.Superhero{shMock}))
+	s.mock.ExpectQuery(regexp.QuoteMeta(
+		`SELECT * FROM "superhero_groups"  WHERE "superhero_groups"."deleted_at" IS NULL
+			AND (("superhero_id" IN ($1))) ORDER BY "superhero_groups"."id" ASC`)).
+		WithArgs(shMock.ID).
+		WillReturnRows(s.CreateSuperheroGroupDBRows([]superheroesbundle.SuperheroGroup{shGroupMock}))
 
-	sh, err := s.repo.FindOne(mockData[0].ID)
+	sh, err := s.repo.FindOne(shMock.ID)
 	s.NoError(err, "should not return error on Find one")
-	s.Equal(mockData[0], sh)
+	s.Equal(shMock, sh)
 }
 
 func (s *TestSuperheroesRepositorySuite) TestCreate() {
-	mockData := superheroesbundle.NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender...")
+	mockData := superheroesbundle.NewSuperhero("Wolverine", "Logan", superheroesbundle.GoodAlignment, 63, 89, "Adventurer, instructor...", "http://www.hero.com/161.jpg", 7)
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`INSERT INTO "superheros" ("id","created_at","updated_at","deleted_at","name","full_name","intelligence","power","occupation")
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING "superheros"."id"`)).
-		WithArgs(mockData.ID, AnyTime{}, AnyTime{}, nil, mockData.Name, mockData.FullName, mockData.Intelligence, mockData.Power, mockData.Occupation).
+		`INSERT INTO "superheroes" ("id","created_at","updated_at","deleted_at","name","full_name","alignment","intelligence","power","occupation","image_url","relatives")
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING "superheroes"."id"`)).
+		WithArgs(mockData.ID, AnyTime{}, AnyTime{}, nil, mockData.Name, mockData.FullName, mockData.Alignment, mockData.Intelligence, mockData.Power, mockData.Occupation, mockData.ImageURL, mockData.TotalRelatives).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"id"}).AddRow(mockData.ID.String()))
 	s.mock.ExpectCommit()
@@ -107,12 +122,12 @@ func (s *TestSuperheroesRepositorySuite) TestCreate() {
 }
 
 func (s *TestSuperheroesRepositorySuite) TestDelete() {
-	mockData := superheroesbundle.NewSuperhero("Wolverine", "Logan", 63, 89, "Adventurer, instructor, former bartender...")
+	mockData := superheroesbundle.NewSuperhero("Wolverine", "Logan", superheroesbundle.GoodAlignment, 63, 89, "Adventurer, instructor...", "http://www.hero.com/161.jpg", 7)
 
 	//TODO: Test 404 if not found the superhero
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(regexp.QuoteMeta(
-		`UPDATE "superheros" SET "deleted_at"=$1  WHERE "superheros"."deleted_at" IS NULL AND ((id = $2))`)).
+		`UPDATE "superheroes" SET "deleted_at"=$1  WHERE "superheroes"."deleted_at" IS NULL AND ((id = $2))`)).
 		WithArgs(AnyTime{}, mockData.ID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	s.mock.ExpectCommit()

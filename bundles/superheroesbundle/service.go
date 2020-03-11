@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
+
+	"github.com/carantes/superheroes-api/core"
 )
 
 // SuperheroAPI handle api methods
@@ -18,6 +21,34 @@ type SuperheroAPISearchResponse struct {
 	Results []SuperheroAPISearchResponseResult `json:"results"`
 }
 
+// ToSuperhero map API response to a Superhero model
+func (res *SuperheroAPISearchResponse) ToSuperhero() []Superhero {
+	var shs []Superhero
+	var alignment SuperheroAlignment
+
+	for _, item := range res.Results {
+		sh := NewSuperhero(
+			item.Name,
+			item.Biography.FullName,
+			alignment.FromString(item.Biography.Alignment),
+			core.GetUtils().ParseInt(item.Powerstats.Intelligence),
+			core.GetUtils().ParseInt(item.Powerstats.Power),
+			item.Work.Occupation,
+			item.Image.URL,
+			len(strings.SplitAfter(item.Connections.Relatives, ",")),
+		)
+
+		groups := strings.Split(item.Connections.Groups, ",")
+		for _, group := range groups {
+			sh.AddGroup(group)
+		}
+
+		shs = append(shs, *sh)
+	}
+
+	return shs
+}
+
 // SuperheroAPISearchResponseResult result object
 type SuperheroAPISearchResponseResult struct {
 	Name        string                                      `json:"name"`
@@ -25,6 +56,7 @@ type SuperheroAPISearchResponseResult struct {
 	Biography   SuperheroAPISearchResponseResultBiography   `json:"biography"`
 	Work        SuperheroAPISearchResponseResultWork        `json:"work"`
 	Connections SuperheroAPISearchResponseResultConnections `json:"connections"`
+	Image       SuperheroAPISearchResponseResultImage       `json:"image"`
 }
 
 // SuperheroAPISearchResponseResultPowerstats result powerstats section
@@ -42,6 +74,7 @@ type SuperheroAPISearchResponseResultBiography struct {
 	FullName  string   `json:"full-name"`
 	AlterEgos string   `json:"alter-egos"`
 	Aliases   []string `json:"aliases"`
+	Alignment string   `json:"alignment"`
 }
 
 // SuperheroAPISearchResponseResultWork result work section
@@ -54,6 +87,11 @@ type SuperheroAPISearchResponseResultWork struct {
 type SuperheroAPISearchResponseResultConnections struct {
 	Groups    string `json:"group-affiliation"`
 	Relatives string `json:"relatives"`
+}
+
+// SuperheroAPISearchResponseResultImage result image url
+type SuperheroAPISearchResponseResultImage struct {
+	URL string `json:"url"`
 }
 
 // SuperheroAPISearchError is a custom error for search method
