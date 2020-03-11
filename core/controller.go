@@ -37,6 +37,8 @@ func (c *Controller) HandleError(w http.ResponseWriter, err error) bool {
 	switch err := err.(type) {
 	case *HTTPError:
 		c.SendJSON(w, &err, err.Status)
+	case *RepositoryNotFoundError:
+		c.SendJSON(w, &err, http.StatusNotFound)
 	default:
 		msg := map[string]string{
 			"message": "An error occured",

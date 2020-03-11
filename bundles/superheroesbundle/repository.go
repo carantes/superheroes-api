@@ -1,9 +1,9 @@
 package superheroesbundle
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/carantes/superheroes-api/core"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 )
@@ -11,16 +11,6 @@ import (
 // SuperheroesRepository handle db functions
 type SuperheroesRepository struct {
 	db *gorm.DB
-}
-
-// SuperheroNotFoundError is a custom error for not found on repository
-type SuperheroNotFoundError struct {
-	error
-	ID uuid.UUID
-}
-
-func (e *SuperheroNotFoundError) Error() string {
-	return fmt.Sprintf("superhero with UUD %s not found", e.ID.String())
 }
 
 // NewSuperheroesRepository instance
@@ -58,7 +48,7 @@ func (repo *SuperheroesRepository) FindOne(id uuid.UUID) (Superhero, error) {
 	err := repo.db.Preload("Groups").First(&sh, "id = ?", id).Error
 
 	if err != nil {
-		return sh, &SuperheroNotFoundError{ID: id, error: err}
+		return sh, core.NewRepositoryNotFoundError(id, err)
 	}
 
 	return sh, nil
@@ -72,10 +62,10 @@ func (repo *SuperheroesRepository) Insert(sh *Superhero) error {
 // Delete implement SuperheroesRepositoryInterface
 func (repo *SuperheroesRepository) Delete(id uuid.UUID) error {
 
-	err := repo.db.Delete(&Superhero{}, "id = ?", id).Error
+	result := repo.db.Delete(&Superhero{}, "id = ?", id)
 
-	if err != nil {
-		return &SuperheroNotFoundError{ID: id, error: err}
+	if result.Error != nil || result.RowsAffected == 0 {
+		return core.NewRepositoryNotFoundError(id, result.Error)
 	}
 
 	return nil
