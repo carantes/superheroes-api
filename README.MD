@@ -185,7 +185,7 @@ DB_CONNECTION="host=localhost port=5432 user=postgres dbname=superheroes passwor
 ```
 
 
-> `POST /api/v1/superheroes?name=ironman`
+> `POST /api/v1/superheroes`
 
 ```
 # Body
