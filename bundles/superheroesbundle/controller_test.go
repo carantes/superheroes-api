@@ -134,14 +134,13 @@ func (s *TestSuperheroesControllerSuite) TestCreate() {
 		s.Equal(`{"detail":"Bad request. Invalid payload"}`, rr.Body.String(), "should return invalid payload message")
 	})
 
-	/* TODO: FIX mock FindAll with parameter
 	s.Run("not found", func() {
 		s.router.HandleFunc("/superheroes", s.controller.Create).Methods("POST")
 
-		s.repo.On("FindAll", mock.Anything).Return([]superheroesbundle.Superhero{}, nil)
-		s.service.On("Search", "mussum").Return(superheroesbundle.SuperheroAPISearchResponse{}, nil)
+		s.repo.On("FindAll", &superheroesbundle.Superhero{Name: "Mussum"}).Return([]superheroesbundle.Superhero{}, nil)
+		s.service.On("Search", "Mussum").Return(superheroesbundle.SuperheroAPISearchResponse{}, nil)
 
-		rr := s.ServeRequest("POST", "/superheroes", bytes.NewBufferString(`{ "Name": "mussum" }`))
+		rr := s.ServeRequest("POST", "/superheroes", bytes.NewBufferString(`{ "Name": "Mussum" }`))
 
 		s.Equal(http.StatusNotFound, rr.Code, "should return status 404 not found")
 	})
@@ -152,18 +151,18 @@ func (s *TestSuperheroesControllerSuite) TestCreate() {
 		mockData := []superheroesbundle.Superhero{
 			*superheroesbundle.NewSuperhero("Batman", "Bruce Wayne", superheroesbundle.GoodAlignment, 100, 47, "-", "https://www.superherodb.com/pictures2/portraits/10/100/10441.jpg", 10),
 		}
-		s.repo.On("FindAll", mock.Anything).Return(mockData, nil)
+		s.repo.On("FindAll", &superheroesbundle.Superhero{Name: "Batman"}).Return(mockData, nil)
 
 		rr := s.ServeRequest("POST", "/superheroes", bytes.NewBufferString(`{ "Name": "Batman" }`))
 
 		s.Equal(http.StatusOK, rr.Code, "should return status 200 ok")
 	})
-	*/
+
 	s.Run("created", func() {
 		s.router.HandleFunc("/superheroes", s.controller.Create).Methods("POST")
 
 		// Mock db to return nothing
-		s.repo.On("FindAll", mock.Anything).Return([]superheroesbundle.Superhero{}, nil)
+		s.repo.On("FindAll", &superheroesbundle.Superhero{Name: "Wolverine"}).Return([]superheroesbundle.Superhero{}, nil)
 
 		// Mock service to return a match
 		s.service.On("Search", "Wolverine").Return(superheroesbundle.SuperheroAPISearchResponse{
@@ -179,6 +178,7 @@ func (s *TestSuperheroesControllerSuite) TestCreate() {
 
 		s.Equal(http.StatusCreated, rr.Code, "should return status 201 created")
 	})
+
 }
 
 func (s *TestSuperheroesControllerSuite) TestDelete() {

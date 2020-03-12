@@ -28,7 +28,7 @@ func (c *Config) Load() {
 	c.APIPrefix = os.Getenv("API_PREFIX")
 	c.SuperheroAPIBaseURL = os.Getenv("SUPERHEROAPI_URL")
 	c.SuperheroAPIToken = os.Getenv("SUPERHEROAPI_TOKEN")
-	c.SuperheroAPITimeout = GetUtils().ParseInt(os.Getenv("SUPERHEROAPI_TIMEOUT"))
+	c.SuperheroAPITimeout = ParseInt(os.Getenv("SUPERHEROAPI_TIMEOUT"))
 	c.DBType = os.Getenv("DB_TYPE")
 	c.DBConnection = os.Getenv("DB_CONNECTION")
 }

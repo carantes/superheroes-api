@@ -90,7 +90,7 @@ func (c *SuperheroesController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate superhero data
-	if !sh.Validate() {
+	if err := sh.Validate(); err != nil {
 		c.HandleError(w, core.NewHTTPError(err, http.StatusBadRequest, "Bad request. Invalid payload"))
 		return
 	}

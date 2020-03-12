@@ -1,6 +1,7 @@
 package superheroesbundle
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/carantes/superheroes-api/core"
@@ -91,16 +92,11 @@ func (sh *Superhero) AddGroup(name string) *SuperheroGroup {
 }
 
 // Validate Superhero
-func (sh *Superhero) Validate() bool {
-	sh.Errors = make(map[string]string)
+func (sh *Superhero) Validate() error {
 
 	if sh.Name == "" {
-		sh.Errors["name"] = "superhero must have a name"
+		return errors.New("superhero must have a name")
 	}
 
-	if len(sh.Errors) > 0 {
-		return false
-	}
-
-	return true
+	return nil
 }
