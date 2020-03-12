@@ -12,7 +12,7 @@ The goal here is to keep the project struture very simple, thinking in medium si
 
 ```
 .
-├── build                     # Compiled files
+├── bin                     # Compiled files
 ├── bundles
     ├── superheroesbundle     # Superheroes bundle
         ├── bundle.go
@@ -39,6 +39,7 @@ The goal here is to keep the project struture very simple, thinking in medium si
 1) Requirements
     - Install [GO v1.14](https://golang.org/dl/)
     - Install [Postgres 12](https://www.postgresql.org/download/)
+    - Install [Make](http://gnuwin32.sourceforge.net/packages/make.htm)
 
 2) Setup database
     - Access postgres console and create a new db `superheroes`
@@ -46,14 +47,14 @@ The goal here is to keep the project struture very simple, thinking in medium si
 3) Configure local environment
     - Create a new `.env` on project root folder
 
-4) Run the app
+4) Run the tests
     ```
-    go run .
+    make test
     ```
 
-5) Run the tests
+5) Run the app
     ```
-    go test --cover
+    make run
     ```
 
 ## Environments
@@ -243,5 +244,6 @@ DB_CONNECTION="host=localhost port=5432 user=postgres dbname=superheroes passwor
 - [Gorilla MUX](github.com/gorilla/mux): HTTP Router and for building webservers
 - [GO DotEnv](github.com/joho/godotenv): Load environment variables from .env
 - [UUID](github.com/satori/go.uuid): Generate and Parse Universally Unique Identifier (UUID)
-- [Testify](github.com/stretchr/testify/assert): Easy assertions
+- [Testify](github.com/stretchr/testify/assert): Testing utilities, easy assertions, mocking, etc
+- [GO ORM](github.com/jinzhu/gorm): ORM for GO
 - [SQL Mock](github.com/DATA-DOG/go-sqlmock): Mock database interactions
