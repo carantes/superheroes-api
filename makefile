@@ -5,6 +5,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
+DOCKERCMD=docker-compose
 BINARY_NAME=bin/superheroesapi
 
 build:
@@ -15,5 +16,8 @@ test:
 
 run:
 	$(GORUN) main.go
+
+run-docker:
+	${DOCKERCMD} up --build
 
 all: test run
